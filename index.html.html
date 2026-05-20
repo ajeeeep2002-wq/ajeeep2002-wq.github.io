@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Manual CV Builder (ATS) | Supply Chain</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <style>
+    .paper { background:#fff; min-height:900px; font-family: 'Segoe UI', system-ui, sans-serif; }
+    .section-title { font-size:13px; font-weight:700; color:#065f46; letter-spacing:0.5px; }
+    .job-title { font-weight:600; font-size:14px; color:#111827; }
+    .date { font-size:12px; color:#4b5563; font-weight:500; }
+    .bullet { font-size:13px; color:#374151; line-height:1.65; }
+    .cv-text { font-size:13px; line-height:1.7; color:#374151; }
+    @media print {
+      .no-print { display:none !important; }
+      .paper { box-shadow:none !important; border:none; }
+    }
+  </style>
+</head>
+<body class="bg-gray-100 text-gray-800">
+
+  <!-- Header -->
+  <header class="bg-emerald-900 text-white px-4 py-3 shadow no-print">
+    <div class="max-w-6xl mx-auto flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <span class="text-lg font-bold">Manual CV Builder (ATS)</span>
+        <span class="text-xs bg-emerald-700 px-2 py-1 rounded">Supply Chain</span>
+      </div>
+      <div class="flex gap-2">
+        <button id="downloadPdfBtn" class="bg-white text-emerald-900 px-3 py-1.5 rounded text-sm font-semibold">Download PDF</button>
+        <button id="downloadWordBtn" class="bg-amber-500 hover:bg-amber-600 text-white px-3 py-1.5 rounded text-sm font-semibold">Download Word</button>
+        <button id="resetBtn" class="bg-emerald-700 hover:bg-emerald-800 text-white px-3 py-1.5 rounded text-sm font-semibold">Reset</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-6xl mx-auto p-4 grid lg:grid-cols-12 gap-4">
+
+    <!-- Form Section -->
+    <section class="lg:col-span-5 space-y-4 no-print">
+
+      <!-- Personal -->
+      <div class="bg-white rounded-xl shadow p-4 border">
+        <h2 class="font-bold mb-3">Personal</h2>
+        <div class="grid grid-cols-2 gap-3">
+          <input id="fullName" class="border rounded p-2" placeholder="Full Name">
+          <input id="title" class="border rounded p-2" value="Supply Chain Manager" placeholder="Job Title">
+          <input id="email" class="border rounded p-2" placeholder="Email">
+          <input id="phone" class="border rounded p-2" placeholder="Phone">
+          <input id="city" class="border rounded p-2" placeholder="City">
+          <input id="nationality" class="border rounded p-2" placeholder="Nationality">
+          <input id="linkedin" class="col-span-2 border rounded p-2" placeholder="LinkedIn URL (optional)">
+        </div>
+      </div>
+
+      <!-- Summary -->
+      <div class="bg-white rounded-xl shadow p-4 border">
+        <h2 class="font-bold mb-2">Professional Summary</h2>
+        <textarea id="summary" class="w-full border rounded p-2" rows="4" placeholder="Write your professional summary..."></textarea>
+      </div>
+
+      <!-- Experience -->
+      <div class="bg-white rounded-xl shadow p-4 border">
+        <div class="flex justify-between mb-2">
+          <h2 class="font-bold">Experience</h2>
+          <button id="addExpBtn" class="text-sm text-emerald-700 font-semibold">+ Add</button>
+        </div>
+        <div id="expList" class="space-y-3"></div>
+      </div>
+
+      <!-- Education -->
+      <div class="bg-white rounded-xl shadow p-4 border">
+        <h2 class="font-bold mb-2">Education</h2>
+        <input id="university" class="w-full border rounded p-2 mb-2" placeholder="University / College Name">
+        <div class="grid grid-cols-2 gap-2">
+          <input id="degree" class="border rounded p-2" placeholder="Degree">
+          <input id="field" class="border rounded p-2" placeholder="Field of Study">
+          <input id="gradYear" class="border rounded p-2" placeholder="Year">
+        </div>
+      </div>
+
+      <!-- School -->
+      <div class="bg-white rounded-xl shadow p-4 border">
+        <h2 class="font-bold mb-2">School</h2>
+        <input id="school" class="w-full border rounded p-2 mb-2" placeholder="School Name">
+        <input id="schoolYear" class="w-full border rounded p-2" placeholder="Year">
+      </div>
+
+      <!-- Training Courses -->
+      <div class="bg-white rounded-xl shadow p-4 border">
+        <div class="flex justify-between mb-2">
+          <h2 class="font-bold">Training Courses</h2>
+          <button id="addCourseBtn" class="text-sm text-emerald-700 font-semibold">+ Add</button>
+        </div>
+        <div id="courseList" class="space-y-2"></div>
+      </div>
+
+      <!-- Skills -->
+      <div class="bg-white rounded-xl shadow p-4 border">
+        <h2 class="font-bold mb-2">Skills</h2>
+        <div class="flex gap-2">
+          <input id="skillInput" class="flex-1 border rounded p-2" placeholder="Type skill and press Add">
+          <button id="addSkillBtn" class="bg-emerald-700 text-white px-4 rounded font-semibold">Add</button>
+        </div>
+        <div id="skillTags" class="flex flex-wrap gap-2 mt-3"></div>
+      </div>
+
+    </section>
+
+    <!-- Preview -->
+    <section class="lg:col-span-7">
+      <div class="bg-white rounded-xl shadow border overflow-hidden">
+        <div class="bg-emerald-900 text-white px-4 py-3 flex justify-between no-print">
+          <span class="font-semibold">ATS-Friendly Preview</span>
+        </div>
+        <div id="cvPreview" class="paper p-8"></div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    let skills = [];
+    let expId = 0;
+    let courseId = 0;
+
+    const $ = id => document.getElementById(id);
+    const esc = s => (s ?? "").toString().replace(/&/g,"&amp;").replace(/</g,"&lt;");
+
+    function renderPreview() {
+      const fullName = esc($("fullName").value) || "Your Name";
+      const title = esc($("title").value);
+      const email = esc($("email").value);
+      const phone = esc($("phone").value);
+      const city = esc($("city").value);
+      const nationality = esc($("nationality").value);
+      const linkedin = esc($("linkedin").value);
+      const summary = esc($("summary").value);
+
+      // Experience
+      const expHTML = [...document.querySelectorAll(".exp-block")].map(block => {
+        const job = esc(block.querySelector(".exp-title").value);
+        const company = esc(block.querySelector(".exp-company").value);
+        const start = esc(block.querySelector(".exp-start").value);
+        const end = esc(block.querySelector(".exp-end").value);
+        const bullets = (block.querySelector(".exp-bullets").value || "")
+          .split("\n").map(b => b.trim()).filter(Boolean)
+          .map(b => `<li class="bullet">• ${esc(b)}</li>`).join("");
+
+        if (!job && !company) return "";
+
+        return `
+          <div class="mt-3">
+            <div class="flex items-center gap-2">
+              <span class="job-title">${job}</span>
+              ${company ? `<span class="text-gray-500">— ${company}</span>` : ""}
+              ${(start || end) ? `<span class="date ml-2">(${start} – ${end || "Present"})</span>` : ""}
+            </div>
+            ${bullets ? `<ul class="mt-1.5 pl-1">${bullets}</ul>` : ""}
+          </div>
+        `;
+      }).join("");
+
+      // Education
+      const university = esc($("university").value);
+      const degree = esc($("degree").value);
+      const field = esc($("field").value);
+      const gradYear = esc($("gradYear").value);
+      const hasEducation = university || degree || field;
+
+      // School
+      const school = esc($("school").value);
+      const schoolYear = esc($("schoolYear").value);
+      const hasSchool = school || schoolYear;
+
+      // Training Courses
+      const courseHTML = [...document.querySelectorAll(".course-block")].map(c => {
+        const name = esc(c.querySelector(".course-name").value);
+        const provider = esc(c.querySelector(".course-provider").value);
+        const year = esc(c.querySelector(".course-year").value);
+        if (!name) return "";
+        return `<div class="mt-1"><span class="font-medium">${name}</span> ${provider ? `— ${provider}` : ""} ${year ? `(${year})` : ""}</div>`;
+      }).join("");
+
+      // Skills
+      const skillsHTML = skills.length ? 
+        `<div class="text-sm">${skills.map(esc).join(" • ")}</div>` : "";
+
+      $("cvPreview").innerHTML = `
+        <div>
+          <div class="border-b pb-4">
+            <h1 class="text-2xl font-bold">${fullName}</h1>
+            <div class="text-emerald-800 font-semibold">${title}</div>
+            <div class="text-xs mt-2 text-gray-600">
+              ${[city, phone, email].filter(Boolean).join(" | ")}
+              ${nationality ? ` | ${nationality}` : ""}
+              ${linkedin ? `<div>${linkedin}</div>` : ""}
+            </div>
+          </div>
+
+          ${summary ? `
+          <div class="mt-4">
+            <div class="section-title border-b pb-1">PROFESSIONAL SUMMARY</div>
+            <p class="cv-text mt-2">${summary}</p>
+          </div>` : ""}
+
+          ${expHTML ? `
+          <div class="mt-5">
+            <div class="section-title border-b pb-1">EXPERIENCE</div>
+            ${expHTML}
+          </div>` : ""}
+
+          ${hasEducation ? `
+          <div class="mt-5">
+            <div class="section-title border-b pb-1">EDUCATION</div>
+            <div class="mt-2">
+              <div class="font-semibold">${degree} ${field ? "in " + field : ""}</div>
+              <div>${university} ${gradYear ? " | " + gradYear : ""}</div>
+            </div>
+          </div>` : ""}
+
+          ${hasSchool ? `
+          <div class="mt-5">
+            <div class="section-title border-b pb-1">SCHOOL</div>
+            <div class="mt-2">
+              <div>${school}</div>
+              <div class="text-sm">${schoolYear}</div>
+            </div>
+          </div>` : ""}
+
+          ${courseHTML ? `
+          <div class="mt-5">
+            <div class="section-title border-b pb-1">TRAINING COURSES</div>
+            <div class="mt-2 text-sm">${courseHTML}</div>
+          </div>` : ""}
+
+          ${skills.length ? `
+          <div class="mt-5">
+            <div class="section-title border-b pb-1">SKILLS</div>
+            <div class="mt-2">${skillsHTML}</div>
+          </div>` : ""}
+        </div>
+      `;
+    }
+
+    // Add Experience
+    function addExperience() {
+      expId++;
+      const div = document.createElement("div");
+      div.className = "exp-block border rounded p-3 bg-gray-50";
+      div.innerHTML = `
+        <div class="flex justify-between">
+          <span class="font-semibold text-sm">Experience #${expId}</span>
+          <button class="text-red-600 text-xs exp-remove">Remove</button>
+        </div>
+        <div class="grid grid-cols-2 gap-2 mt-2">
+          <input class="exp-title border rounded p-2" placeholder="Job Title">
+          <input class="exp-company border rounded p-2" placeholder="Company">
+          <input class="exp-start border rounded p-2" placeholder="Start Date">
+          <input class="exp-end border rounded p-2" placeholder="End Date">
+          <textarea class="exp-bullets col-span-2 border rounded p-2" rows="3" placeholder="Bullet points (one per line)"></textarea>
+        </div>
+      `;
+      $("expList").appendChild(div);
+      div.querySelector(".exp-remove").onclick = () => { div.remove(); renderPreview(); };
+      div.querySelectorAll("input, textarea").forEach(el => el.oninput = renderPreview);
+      renderPreview();
+    }
+
+    // Add Training Course
+    function addCourse() {
+      courseId++;
+      const div = document.createElement("div");
+      div.className = "course-block border rounded p-2 bg-gray-50";
+      div.innerHTML = `
+        <div class="flex justify-between mb-1">
+          <span class="text-sm font-semibold">Course #${courseId}</span>
+          <button class="text-red-600 text-xs course-remove">×</button>
+        </div>
+        <input class="course-name w-full border rounded p-1 mb-1" placeholder="Course Name">
+        <div class="grid grid-cols-2 gap-2">
+          <input class="course-provider border rounded p-1" placeholder="Provider">
+          <input class="course-year border rounded p-1" placeholder="Year">
+        </div>
+      `;
+      $("courseList").appendChild(div);
+      div.querySelector(".course-remove").onclick = () => { div.remove(); renderPreview(); };
+      div.querySelectorAll("input").forEach(el => el.oninput = renderPreview);
+      renderPreview();
+    }
+
+    // Skills
+    function addSkill() {
+      const val = $("skillInput").value.trim();
+      if (!val) return;
+      if (skills.some(s => s.toLowerCase() === val.toLowerCase())) return;
+      skills.push(val);
+      $("skillInput").value = "";
+      renderSkills();
+      renderPreview();
+    }
+
+    function renderSkills() {
+      $("skillTags").innerHTML = skills.map((s, i) => `
+        <span class="tag">${esc(s)} <button onclick="removeSkill(${i})">×</button></span>
+      `).join("");
+    }
+
+    window.removeSkill = function(i) {
+      skills.splice(i, 1);
+      renderSkills();
+      renderPreview();
+    };
+
+    // Events
+    $("addExpBtn").onclick = addExperience;
+    $("addCourseBtn").onclick = addCourse;
+    $("addSkillBtn").onclick = addSkill;
+    $("skillInput").onkeydown = e => { if (e.key === "Enter") { e.preventDefault(); addSkill(); } };
+
+    ["fullName","title","email","phone","city","nationality","linkedin","summary",
+     "university","degree","field","gradYear","school","schoolYear"
+    ].forEach(id => $(id).oninput = renderPreview);
+
+    $("downloadPdfBtn").onclick = () => {
+      html2pdf().set({
+        margin: 10,
+        filename: `CV_${$("fullName").value || "Candidate"}.pdf`,
+        image: { type: "jpeg", quality: 0.98 },
+        html2canvas: { scale: 2 },
+        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" }
+      }).from($("cvPreview")).save();
+    };
+
+    $("downloadWordBtn").onclick = () => {
+      const blob = new Blob([$("cvPreview").innerText], { type: "application/msword" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `CV_${$("fullName").value || "Candidate"}.doc`;
+      a.click();
+    };
+
+    $("resetBtn").onclick = () => {
+      if (!confirm("Reset everything?")) return;
+      document.querySelectorAll("input, textarea").forEach(el => el.value = "");
+      skills = [];
+      $("skillTags").innerHTML = "";
+      $("expList").innerHTML = "";
+      $("courseList").innerHTML = "";
+      expId = 0;
+      courseId = 0;
+      addExperience();
+      renderPreview();
+    };
+
+    // Init
+    addExperience();
+    renderPreview();
+  </script>
+</body>
+</html>
